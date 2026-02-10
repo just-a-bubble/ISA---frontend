@@ -1,0 +1,159 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    text-align: center;
+    margin: 30px;
+}
+
+h1 {
+    color: #333;
+}
+
+.search-box, .login-box, .register-box {
+    margin: 20px auto;
+    width: 300px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+input {
+    padding: 8px;
+    width: 80%;
+    margin-bottom: 10px;
+}
+
+button {
+    padding: 8px 12px;
+    cursor: pointer;
+    background-color: #007bff;
+    border: none;
+    color: white;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.recipe {
+    display: inline-block;
+    margin: 10px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: white;
+    position: relative;
+}
+
+.recipe img {
+    max-width: 250px;
+    border-radius: 8px;
+}
+
+.logout {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+}
+
+/* Najljubši recepti */
+.favourites {
+    background-color: #ffffff;
+    width: 350px;
+    margin: 0 auto 20px;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.favourites ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.favourites li {
+    padding: 5px 0;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.favourites li button {
+    background-color: #dc3545;
+}
+
+.favourites li button:hover {
+    background-color: #b02a37;
+}
+
+.fav-link {
+    color: #007bff;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.fav-link:hover {
+    color: #0056b3;
+}
+
+#fav-display {
+    margin-top: 20px;
+}
+
+
+
+.received {
+    background-color: #ffffff;
+    width: 350px;
+    margin: 0 auto 20px;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.received ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.received li {
+    padding: 5px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.sender {
+    color: #555;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+
+
+
+/* gumb za zapiranje prikaza recepta */
+.close-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background-color: #dc3545;
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    width: 25px;
+    height: 25px;
+    line-height: 20px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;     /* vertikalno centriranje */
+    justify-content: center; /* horizontalno centriranje */
+}
+
+.close-btn:hover {
+    background-color: #b02a37;
+}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <title>Registracija</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Registracija</h1>
+        <form id="register-form">
+            <input type="text" name="username" id="username" placeholder="Uporabniško ime" required>
+            <input type="password" name="password" id="password" placeholder="Geslo" required>
+            <button type="submit">Registriraj</button>
+        </form>
+        <p>Že imaš račun? <a href="/login.html">Prijavi se</a></p>
+        <p id="msg"></p>
+    </div>
+
+    <script>
+        document.getElementById("register-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            try {
+                const body = new URLSearchParams({username, password});
+                const res = await fetch("/api/register", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    body
+                });
+                const data = await res.json();
+                document.getElementById("msg").textContent = data.message || "";
+                if (data.success) {
+                    // optionally redirect to login
+                    setTimeout(() => window.location.href = "/login.html", 800);
+                }
+            } catch (err) {
+                document.getElementById("msg").textContent = "Napaka pri registraciji.";
+            }
+        });
+    </script>
+</body>
+</html>

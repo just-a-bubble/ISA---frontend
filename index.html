@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <title>Iskanje receptov</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="logout">
+        <button id="logout-btn">Odjava</button>
+    </div>
+
+    <h1>Iskanje receptov</h1>
+    <p id="greeting">Pozdravljen, ...</p>
+
+    <!-- Najljubši recepti -->
+    <div class="favourites">
+        <h3>Tvoji najljubši recepti:</h3>
+        <ul id="fav-list"></ul>
+    </div>
+
+    <!-- Prejeti recepti -->
+    <div class="received">
+        <h3>Prejeti recepti:</h3>
+        <ul id="recv-list"></ul>
+    </div>
+
+    <div id="fav-display"></div>
+
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder="Vnesi iskane besede...">
+        <button id="search-btn">Išči</button>
+        <button id="clear-btn">Počisti</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        // Helper: robusten fetch, vrne JSON ali throw
+        async function safeFetch(url, options) {
+            const opts = Object.assign({
+                credentials: "same-origin",
+                headers: {"Content-Type": "application/json"}
+            }, options || {});
+            const res = await fetch(url, opts);
+            const contentType = res.headers.get("content-type") || "";
+            if (!res.ok) {
+                if (contentType.includes("application/json")) {
+                    const err = await res.json();
+                    throw err;
+                } else {
+                    const txt = await res.text();
+                    throw { error: txt || "Napaka pri klicu API." };
+                }
+            }
+            if (contentType.includes("application/json")) {
+                return await res.json();
+            } else {
+                const txt = await res.text();
+                return txt;
+            }
+        }
+
+        async function loadMe() {
+            try {
+                const data = await safeFetch("/api/me");
+                document.getElementById("greeting").textContent = `Pozdravljen, ${data.username}!`;
+                // favourites
+                const favList = document.getElementById("fav-list");
+                favList.innerHTML = "";
+                data.favourites.forEach(f => {
+                    const li = document.createElement("li");
+                    li.dataset.id = f.id;
+                    li.innerHTML = `
+                        <span class="fav-link" onclick="showFavourite(${f.id})">${f.naziv}</span>
+                        <button onclick="removeFavourite(${f.id})">Odstrani</button>
+                    `;
+                    favList.appendChild(li);
+                });
+                // received
+                const recvList = document.getElementById("recv-list");
+                recvList.innerHTML = "";
+                data.received.forEach(r => {
+                    const li = document.createElement("li");
+                    li.innerHTML = `<span class="fav-link" onclick="showFavourite(${r.id})">${r.naziv}</span> <span class="sender"> od ${r.sender}</span>`;
+                    recvList.appendChild(li);
+                });
+            } catch (err) {
+                // not logged in -> redirect to login
+                window.location.href = "/login.html";
+            }
+        }
+
+        async function searchRecipes() {
+            const query = document.getElementById("search-input").value;
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = "<p>Iščem...</p>";
+            try {
+                const data = await safeFetch("/api/search", {
+                    method: "POST",
+                    body: JSON.stringify({query})
+                });
+                resultsDiv.innerHTML = "";
+                if (!Array.isArray(data) || data.length === 0) {
+                    resultsDiv.innerHTML = "<p>Ni zadetkov.</p>";
+                    return;
+                }
+                data.forEach(item => {
+                    const div = document.createElement("div");
+                    div.className = "recipe";
+
+                    const title = document.createElement("h3");
+                    title.textContent = item.naziv;
+
+                    const img = document.createElement("img");
+                    img.src = item.image;
+
+                    const shareBtn = document.createElement("button");
+                    shareBtn.textContent = "Deli";
+                    shareBtn.onclick = () => openShareDialog(item.id);
+
+                    const favBtn = document.createElement("button");
+                    favBtn.textContent = "Dodaj med najljubše";
+                    favBtn.onclick = async () => {
+                        try {
+                            const result = await safeFetch("/api/add_favourite", {
+                                method: "POST",
+                                body: JSON.stringify({recipe_id: item.id})
+                            });
+                            if (result.success) {
+                                favBtn.textContent = "✅ Dodano";
+                                favBtn.disabled = true;
+                                addFavouriteToList(item);
+                            } else {
+                                if (result.error) alert(result.error);
+                                else alert("Recept je že med tvojimi najljubšimi.");
+                            }
+                        } catch (err) {
+                            console.error("add_favourite napaka:", err);
+                            alert("Napaka pri dodajanju recepta med najljubše.");
+                        }
+                    };
+
+                    div.appendChild(title);
+                    div.appendChild(img);
+                    div.appendChild(shareBtn);
+                    div.appendChild(favBtn);
+                    resultsDiv.appendChild(div);
+                });
+            } catch (err) {
+                console.error("searchRecipes napaka:", err);
+                resultsDiv.innerHTML = "<p>Napaka pri iskanju.</p>";
+            }
+        }
+
+        function addFavouriteToList(item) {
+            const list = document.getElementById("fav-list");
+            if (list.querySelector(`li[data-id="${item.id}"]`)) return;
+            const li = document.createElement("li");
+            li.dataset.id = item.id;
+            li.innerHTML = `
+                <span class="fav-link" onclick="showFavourite(${item.id})">${item.naziv}</span>
+                <button onclick="removeFavourite(${item.id})">Odstrani</button>
+            `;
+            list.appendChild(li);
+        }
+
+        async function removeFavourite(id) {
+            try {
+                const result = await safeFetch("/api/remove_favourite", {
+                    method: "POST",
+                    body: JSON.stringify({recipe_id: id})
+                });
+                if (result.success) {
+                    document.querySelector(`#fav-list li[data-id="${id}"]`)?.remove();
+                    const display = document.getElementById("fav-display");
+                    if (display.dataset.id == id) display.innerHTML = "";
+                } else {
+                    alert(result.error || "Napaka pri odstranjevanju.");
+                }
+            } catch (err) {
+                console.error("removeFavourite napaka:", err);
+                alert("Napaka pri odstranjevanju najljubšega recepta.");
+            }
+        }
+
+        function openShareDialog(recipeId) {
+            const username = prompt("Vnesi uporabniško ime prejemnika:");
+            if (!username) return;
+            safeFetch("/api/share_recipe", {
+                method: "POST",
+                body: JSON.stringify({recipe_id: recipeId, receiver: username})
+            }).then(data => {
+                if (data.success) alert("Recept uspešno poslan!");
+                else alert(data.error || "Napaka pri pošiljanju.");
+            }).catch(err => {
+                console.error("share_recipe napaka:", err);
+                alert("Napaka pri pošiljanju recepta.");
+            });
+        }
+
+        async function showFavourite(id) {
+            try {
+                const recipe = await safeFetch("/api/get_recipe", {
+                    method: "POST",
+                    body: JSON.stringify({recipe_id: id})
+                });
+                const display = document.getElementById("fav-display");
+                display.dataset.id = id;
+                display.innerHTML = `
+                    <div class="recipe">
+                        <button class="close-btn" onclick="closeFavourite()">✖</button>
+                        <h3>${recipe.naziv}</h3>
+                        <img src="${recipe.image}">
+                    </div>
+                `;
+                display.scrollIntoView({behavior: "smooth"});
+            } catch (err) {
+                console.error("showFavourite napaka:", err);
+                alert("Napaka pri nalaganju recepta.");
+            }
+        }
+
+        function closeFavourite() {
+            const display = document.getElementById("fav-display");
+            display.innerHTML = "";
+            delete display.dataset.id;
+        }
+
+        document.getElementById("search-btn").addEventListener("click", searchRecipes);
+        document.getElementById("clear-btn").addEventListener("click", () => {
+            document.getElementById("search-input").value = "";
+            document.getElementById("results").innerHTML = "";
+        });
+
+        // Logout
+        document.getElementById("logout-btn").addEventListener("click", async () => {
+            try {
+                await safeFetch("/api/logout", { method: "POST" });
+                window.location.href = "/login.html";
+            } catch (err) {
+                console.error("logout napaka:", err);
+                window.location.href = "/login.html";
+            }
+        });
+
+        // on load
+        window.addEventListener("load", loadMe);
+    </script>
+</body>
+</html>
